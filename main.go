@@ -31,15 +31,4 @@ func main() {
 		fmt.Printf("connexion to server %s OK\n", srvName)
 		os.Exit(1)
 	}
-
-	srv.ListArticlesFromGroup("alt.binaries.documentaries.french")
-
-	// seg := NZBSegment {
-	// 	Bytes: 113546, Number: 1, ID: "part1of1.M614zdBX6DO2E6uF2$f&amp;@camelsystem-powerpost.local",
-	// }
-
-	// seg.Download(srv, "alt.binaries.documentaries.french")
-
-	// nzb := NewNZB("nzb/sample1.nzb")
-	// fmt.Print(nzb)
 }
