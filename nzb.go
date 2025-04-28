@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"golang.org/x/net/html/charset"
@@ -25,36 +26,29 @@ type NZBFile struct {
 }
 
 type NZBSegment struct {
-	Bytes  int    `xml:"bytes,attr"`
+	Bytes  uint32 `xml:"bytes,attr"`
 	Number int    `xml:"number,attr"`
 	ID     string `xml:",chardata"` // The message ID inside the tag
+	Offset uint32 // offset of the segment within the file
 }
 
-func (z *NZBSegment) Download(s *NNTPServer, group string) {
+// Implement the String() method
+// func (z *NZB) String() string {
+// 	return fmt.Sprintf("bytes=%d numner=")
+// }
 
-	// select group
-	sendCommand(s.conn, fmt.Sprintf("GROUP %s\r\n", group))
-	resp := readLine(s.rdr)
-	if !strings.HasPrefix(resp, "211") {
-		panic("Failed to retrieve article")
-	}
-
-	fmt.Println("GROUP response:", resp)
-
+func (z *NZBSegment) Download(s *NNTPServer) {
 	// Request the article by Message-ID
-	sendCommand(s.conn, fmt.Sprintf("BODY %s\r\n", z.ID))
-	resp = readLine(s.rdr)
-
-	fmt.Println("ARTICLE response:", resp)
+	resp := s.SendCommand("BODY", z.ID)
 
 	if !strings.HasPrefix(resp, "222") {
-		panic("Failed to retrieve article")
+		log.Fatalf("Failed to retrieve article ID: %s", z.ID)
 	}
 
 	// Create a file to save binary data
 	outFile, err := os.Create("segment_output.part")
 	if err != nil {
-		panic(err)
+		log.Fatalf("Unable to create file")
 	}
 	defer outFile.Close()
 
@@ -114,7 +108,7 @@ func NewNZB(nzbFile string) *NZB {
 }
 
 // Implement the String() method
-func (z NZB) String() string {
+func (z *NZB) String() string {
 	s := ""
 
 	// Example: print all files and their segments
@@ -126,4 +120,24 @@ func (z NZB) String() string {
 	}
 
 	return s
+}
+
+// NZB segments should be sorted by number but don't assume that
+func (z *NZB) Sort() {
+	for _, file := range z.Files {
+		sort.Slice(file.Segments, func(i, j int) bool {
+			return file.Segments[i].Number < file.Segments[j].Number
+		})
+	}
+}
+
+// Assign offsets to each segment to manage multi-threading
+func (z *NZB) AssignOffset() {
+	for i := range z.Files {
+		offset := uint32(0)
+		for j := range z.Files[i].Segments {
+			z.Files[i].Segments[j].Offset = offset
+			offset += z.Files[i].Segments[j].Bytes
+		}
+	}
 }

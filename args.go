@@ -16,6 +16,7 @@ type CliOpts struct {
 	check        bool          // if set, check connexion to server
 	settingsFile string        // name of the YAML file where configuration is defined
 	logFile      *os.File      // handle on log file
+	interActive  bool          // true if we want a kind of REPL
 	settings     *YAMLSettings // all settings as returned when reading YAML file
 }
 
@@ -40,6 +41,7 @@ func CliArgs() *CliOpts {
 
 	flag.StringVar(&opts.settingsFile, "settings", CONFIG_FILE, "path of the settings file")
 	flag.BoolVar(&opts.check, "check", false, "if set, check connexion to server")
+	flag.BoolVar(&opts.interActive, "i", false, "if set, you can enter interactive commands to send")
 	flag.Parse()
 
 	// read YAML file to get settings
